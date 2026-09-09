@@ -658,6 +658,7 @@ function startRest(exId,i){
   try{localStorage.setItem(REST_KEY,JSON.stringify(state.rest));}catch(_){}
   document.getElementById('restNx').textContent=label;
   document.getElementById('rest').classList.add('on');
+  scheduleRestAlerts(rt);   // bipes finais + alarme (agendados no relógio de áudio)
   restTick();
   clearInterval(state.restTimer);
   state.restTimer=setInterval(restTick,250);
@@ -670,9 +671,9 @@ function restTick(){
   if(left<0)left=0;
   document.getElementById('restN').textContent=left;
   document.getElementById('ringP').style.strokeDashoffset=414.7*(1-left/state.rest.total);
-  if(left<=0){ const visible=document.visibilityState==='visible'; endRest(); if(visible)beep(); }
+  if(left<=0){ endRest(); }   // o som já foi agendado em startRest (scheduleRestAlerts)
 }
-function endRest(){clearInterval(state.restTimer);state.restTimer=null;state.rest=null;try{localStorage.removeItem(REST_KEY);}catch(_){}document.getElementById('rest').classList.remove('on');}
+function endRest(){clearTones();clearInterval(state.restTimer);state.restTimer=null;state.rest=null;try{localStorage.removeItem(REST_KEY);}catch(_){}document.getElementById('rest').classList.remove('on');}
 function skipRest(){endRest();}
 // Ao voltar para o app, re-sincroniza o timer imediatamente.
 document.addEventListener('visibilitychange',()=>{
@@ -694,7 +695,45 @@ function resumeRest(){
     } else { localStorage.removeItem(REST_KEY); }
   }catch(_){}
 }
-function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.2;o.start();setTimeout(()=>{o.stop();c.close();},250);}catch(e){}}
+/* ---------- ÁUDIO (Web Audio agendado — dispara no relógio de áudio, mesmo com JS travado) ---------- */
+let AC=null, keepAlive=null, scheduledTones=[];
+function ensureAudio(){
+  try{
+    if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended') AC.resume();
+    if(!keepAlive){
+      // som inaudível contínuo: ajuda a sessão de áudio a sobreviver em 2º plano no iOS
+      const o=AC.createOscillator(), g=AC.createGain();
+      g.gain.value=0.0001; o.frequency.value=1; o.connect(g); g.connect(AC.destination); o.start();
+      keepAlive={o,g};
+    }
+    return AC;
+  }catch(e){return null;}
+}
+function tone(when,freq,len,vol){
+  const o=AC.createOscillator(), g=AC.createGain();
+  o.type='sine'; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,when);
+  g.gain.exponentialRampToValueAtTime(vol,when+0.02);
+  g.gain.setValueAtTime(vol,Math.max(when+0.03,when+len-0.04));
+  g.gain.exponentialRampToValueAtTime(0.0001,when+len);
+  o.connect(g); g.connect(AC.destination);
+  o.start(when); o.stop(when+len+0.03);
+  scheduledTones.push(o);
+}
+function clearTones(){ scheduledTones.forEach(o=>{try{o.stop();}catch(e){} try{o.disconnect();}catch(e){}}); scheduledTones=[]; }
+function scheduleRestAlerts(rt){
+  if(!ensureAudio())return;
+  clearTones();
+  const t=AC.currentTime;
+  // 3 bipes de aviso nos últimos 3 segundos
+  if(rt>3){ tone(t+rt-3,880,0.14,0.28); tone(t+rt-2,880,0.14,0.28); tone(t+rt-1,880,0.14,0.28); }
+  else { for(let s=Math.min(3,Math.floor(rt)); s>=1; s--) tone(t+rt-s,880,0.14,0.28); }
+  // alarme final (dois tons, mais forte)
+  tone(t+rt,660,0.30,0.36); tone(t+rt+0.34,990,0.55,0.42);
+}
+// Ao tocar a tela pela 1ª vez, "desbloqueia" o áudio (exigência do iOS).
+document.addEventListener('touchstart',()=>{ if(!AC) ensureAudio(); },{once:true,passive:true});
 
 /* ---------- DASHBOARD ---------- */
 let dashMetric='load';
