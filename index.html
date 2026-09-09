@@ -405,7 +405,7 @@ function save(d){localStorage.setItem(KEY,JSON.stringify(d));}
 function update(fn){const d=getData();fn(d);save(d);}
 
 /* ---------- STATE ---------- */
-const state = { screen:'Home', week:currentWeekKey(), workoutId:null, session:null, restTimer:null };
+const state = { screen:'Home', week:currentWeekKey(), workoutId:null, session:null, restTimer:null, rest:null };
 
 /* ---------- HELPERS ---------- */
 function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -572,9 +572,9 @@ function exCard(e){
     const sugAttr=(kgVal===''&&sug!=null)?`placeholder="${sug}" class="sug"`:`value="${kgVal}"`;
     rows+=`<div class="set-row">
       <span class="set-lbl">S${i}</span>
-      <div class="set-check ${s.done?'on':''}" onclick="toggleSet('${e.id}',${i})">${s.done?'✓':''}</div>
-      <div class="inp"><label>Carga (kg)</label><input type="number" inputmode="decimal" step="0.5" ${sugAttr} onchange="setKg('${e.id}',${i},this.value)"></div>
-      <div class="inp"><label>Reps</label><input type="number" inputmode="numeric" value="${repVal!==''?repVal:''}" placeholder="${midReps(e.reps)}" onchange="setReps('${e.id}',${i},this.value)"></div>
+      <div class="set-check ${s.done?'on':''}" id="chk_${e.id}_${i}" onclick="toggleSet('${e.id}',${i})">${s.done?'✓':''}</div>
+      <div class="inp"><label>Carga (kg)</label><input type="number" inputmode="decimal" step="0.5" id="kg_${e.id}_${i}" ${sugAttr} onchange="setKg('${e.id}',${i},this.value)"></div>
+      <div class="inp"><label>Reps</label><input type="number" inputmode="numeric" id="rp_${e.id}_${i}" value="${repVal!==''?repVal:''}" placeholder="${midReps(e.reps)}" onchange="setReps('${e.id}',${i},this.value)"></div>
     </div>`;
   }
   const sugTxt = sug!=null ? `<span>💡 Sugerido: <b>${sug}kg</b></span>` : (weekObj(state.session.weekKey).mode==='manual'?'<span>✍️ Carga manual (base do mês)</span>':'<span>✍️ Sem base ainda</span>');
@@ -582,7 +582,7 @@ function exCard(e){
     <div class="ex-h" onclick="toggleEx('${e.id}')">
       <div class="ex-num">${e.sets}×</div>
       <div class="ex-info"><div class="nm">${e.name}</div><div class="meta">${e.muscle} · ${e.equip} · ${e.reps} reps</div></div>
-      <div class="ex-dot ${dot}"></div>
+      <div class="ex-dot ${dot}" id="dot_${e.id}"></div>
     </div>
     <div class="ex-body">
       <div class="ex-scheme"><span><b>${e.sets}</b> séries × <b>${e.reps}</b></span>${sugTxt}</div>
@@ -592,11 +592,12 @@ function exCard(e){
   return wrap;
 }
 function toggleEx(id){document.getElementById('ex_'+id).classList.toggle('open');}
-function setKg(exId,i,val){ update(d=>{const s=d.sessions.find(x=>x.workoutId===state.workoutId&&x.date===todayStr());s.seriesLog[exId]=s.seriesLog[exId]||{};s.seriesLog[exId]['s'+i]={...(s.seriesLog[exId]['s'+i]||{}),kg:val};}); refreshSession(); }
-function setReps(exId,i,val){ update(d=>{const s=d.sessions.find(x=>x.workoutId===state.workoutId&&x.date===todayStr());s.seriesLog[exId]=s.seriesLog[exId]||{};s.seriesLog[exId]['s'+i]={...(s.seriesLog[exId]['s'+i]||{}),reps:val};}); refreshSession(); }
+// Salva a carga/reps SEM redesenhar a lista (para o card não fechar nem perder o foco).
+function setKg(exId,i,val){ update(d=>{const s=d.sessions.find(x=>x.workoutId===state.workoutId&&x.date===todayStr());s.seriesLog[exId]=s.seriesLog[exId]||{};s.seriesLog[exId]['s'+i]={...(s.seriesLog[exId]['s'+i]||{}),kg:val};}); syncSession(); }
+function setReps(exId,i,val){ update(d=>{const s=d.sessions.find(x=>x.workoutId===state.workoutId&&x.date===todayStr());s.seriesLog[exId]=s.seriesLog[exId]||{};s.seriesLog[exId]['s'+i]={...(s.seriesLog[exId]['s'+i]||{}),reps:val};}); syncSession(); }
 function toggleSet(exId,i){
   const e=EXMAP[exId];
-  let nowOn=false;
+  let nowOn=false, kgOut=null, repsOut=null;
   update(d=>{
     const s=d.sessions.find(x=>x.workoutId===state.workoutId&&x.date===todayStr());
     s.seriesLog[exId]=s.seriesLog[exId]||{};
@@ -609,11 +610,31 @@ function toggleSet(exId,i){
       if(reps==null||reps==='')reps=String(midReps(e.reps));
     }
     s.seriesLog[exId]['s'+i]={done:nowOn,kg,reps,timestamp:Date.now()};
+    kgOut=kg; repsOut=reps;
   });
-  refreshSession();
+  syncSession();
+  // Atualiza SÓ este item na tela (sem redesenhar a lista) — o card fica aberto.
+  const chk=document.getElementById('chk_'+exId+'_'+i);
+  if(chk){ chk.classList.toggle('on',nowOn); chk.textContent=nowOn?'✓':''; }
+  if(nowOn){
+    const kgEl=document.getElementById('kg_'+exId+'_'+i);
+    if(kgEl && kgEl.value==='' && kgOut){ kgEl.value=kgOut; kgEl.classList.remove('sug'); }
+    const rpEl=document.getElementById('rp_'+exId+'_'+i);
+    if(rpEl && rpEl.value==='' && repsOut) rpEl.value=repsOut;
+  }
+  updateDot(exId);
+  updateProg();
   if(nowOn)startRest(exId,i);
 }
-function refreshSession(){ state.session=getData().sessions.find(x=>x.workoutId===state.workoutId&&x.date===todayStr()); renderWorkout(); }
+// Recarrega só os dados da sessão a partir do storage (sem tocar no DOM da lista).
+function syncSession(){ state.session=getData().sessions.find(x=>x.workoutId===state.workoutId&&x.date===todayStr()); }
+// Atualiza a bolinha de status de um exercício.
+function updateDot(exId){
+  const dotEl=document.getElementById('dot_'+exId); if(!dotEl)return;
+  const e=EXMAP[exId]; const log=(state.session.seriesLog[exId])||{};
+  const done=Object.values(log).filter(x=>x.done).length;
+  dotEl.className='ex-dot '+(done===0?'':(done>=e.sets?'full':'part'));
+}
 function updateProg(){
   const P=PLAN[state.workoutId];let total=0,done=0;
   P.blocks.forEach(b=>b.ex.forEach(e=>{total+=e.sets;const l=state.session.seriesLog[e.id]||{};done+=Object.values(l).filter(x=>x.done).length;}));
@@ -627,22 +648,52 @@ function finishWorkout(){
   show('Home');renderHome();
 }
 
-/* ---------- REST TIMER ---------- */
+/* ---------- REST TIMER (baseado em horário final; sobrevive ao 2º plano) ---------- */
+const REST_KEY='treino_lenize_rest';
 function startRest(exId,i){
   const d=getData();const rt=d.settings.restTime||60;
-  const rest=document.getElementById('rest');rest.classList.add('on');
   const e=EXMAP[exId];
-  document.getElementById('restNx').textContent = i<e.sets ? `${e.name} — Série ${i+1}` : 'Próximo exercício';
-  let left=rt;const ring=document.getElementById('ringP');const circ=414.7;
-  const tick=()=>{
-    document.getElementById('restN').textContent=left;
-    ring.style.strokeDashoffset=circ*(1-left/rt);
-    if(left<=0){skipRest();beep();return;}
-    left--;
-  };
-  clearInterval(state.restTimer);tick();state.restTimer=setInterval(tick,1000);
+  const label = (e && i<e.sets) ? `${e.name} — Série ${i+1}` : 'Próximo exercício';
+  state.rest={endAt:Date.now()+rt*1000, total:rt, label};
+  try{localStorage.setItem(REST_KEY,JSON.stringify(state.rest));}catch(_){}
+  document.getElementById('restNx').textContent=label;
+  document.getElementById('rest').classList.add('on');
+  restTick();
+  clearInterval(state.restTimer);
+  state.restTimer=setInterval(restTick,250);
 }
-function skipRest(){clearInterval(state.restTimer);document.getElementById('rest').classList.remove('on');}
+function restTick(){
+  if(!state.rest){clearInterval(state.restTimer);return;}
+  // Tempo restante calculado pelo relógio: se o app ficou parado em 2º plano,
+  // ao voltar ele mostra o valor correto (não "congela").
+  let left=Math.ceil((state.rest.endAt-Date.now())/1000);
+  if(left<0)left=0;
+  document.getElementById('restN').textContent=left;
+  document.getElementById('ringP').style.strokeDashoffset=414.7*(1-left/state.rest.total);
+  if(left<=0){ const visible=document.visibilityState==='visible'; endRest(); if(visible)beep(); }
+}
+function endRest(){clearInterval(state.restTimer);state.restTimer=null;state.rest=null;try{localStorage.removeItem(REST_KEY);}catch(_){}document.getElementById('rest').classList.remove('on');}
+function skipRest(){endRest();}
+// Ao voltar para o app, re-sincroniza o timer imediatamente.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && state.rest){
+    restTick();
+    if(state.rest && !state.restTimer) state.restTimer=setInterval(restTick,250);
+  }
+});
+// Se o app foi recarregado durante um descanso, retoma de onde estava.
+function resumeRest(){
+  try{
+    const r=JSON.parse(localStorage.getItem(REST_KEY));
+    if(r && r.endAt>Date.now()){
+      state.rest=r;
+      document.getElementById('restNx').textContent=r.label||'Próxima série';
+      document.getElementById('rest').classList.add('on');
+      restTick();
+      state.restTimer=setInterval(restTick,250);
+    } else { localStorage.removeItem(REST_KEY); }
+  }catch(_){}
+}
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.2;o.start();setTimeout(()=>{o.stop();c.close();},250);}catch(e){}}
 
 /* ---------- DASHBOARD ---------- */
@@ -768,6 +819,7 @@ let toastT;function toast(m){const t=document.getElementById('toast');t.textCont
 
 /* ---------- INIT ---------- */
 renderHome();
+resumeRest();
 </script>
 </body>
 </html>
