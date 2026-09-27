@@ -4,7 +4,7 @@ App de treino de musculação da Lenize — mesmo padrão do seu app de agosto (
 
 ## O que tem
 - **Split de 6 dias** (Glúteos+Posterior · Ombro+Bíceps · Quadríceps+Internos · Peito+Tríceps · Costas · Glúteos+Ombros) + core nos dias de inferior. Domingo = descanso.
-- **Periodização mensal:** S2 base (carga manual) → S3 progressão +5% → S4 deload −25%.
+- **Periodização mensal:** Outubro (5 semanas): S1 base (manual, com carga inicial sugerida) → S2 +2,5% → S3 +5% → S4 pico +7,5% → S5 deload −25%.
 - **Sugestão automática de carga:** a semana base é preenchida manualmente; nas semanas seguintes o app sugere a carga (aumento ou deload) e é só aceitar ou editar.
 - **Registro série a série** (carga + reps), barra de progresso e timer de descanso.
 - **Painel de acompanhamento:**
@@ -28,9 +28,11 @@ Aqui a ideia é **manter sempre o mesmo endereço**. Para virar setembro→outub
 Edite no `index.html`:
 - `MONTH` → `key`, `label`, `year`, `month` e as `weeks` (datas + modo de cada semana).
 - `BASE_WEEK` → a semana em que a carga é manual (normalmente a 1ª do mês).
+- `START_KG` → carga inicial sugerida da semana base (tirada do mês anterior).
+- `PAST_DELOADS` → acrescente o deload do mês que terminou (só colore o gráfico).
 - `PLAN` → só se quiser trocar exercícios.
 
 O histórico registrado (`localStorage`) **não é tocado** por essas edições.
 
 ---
-*Plano completo em `Plano_Treino_Lenize.md`. v1 · Setembro 2026.*
+*Plano completo em `Plano_Treino_Lenize.md`. v2 · Outubro 2026.*

@@ -166,7 +166,7 @@
   </div>
 
   <div class="card">
-    <div class="toprow"><h3>📆 <span id="calTitle">Setembro 2026</span></h3></div>
+    <div class="toprow"><h3>📆 <span id="calTitle">Outubro 2026</span></h3></div>
     <div class="cal" id="cal"></div>
   </div>
 </div>
@@ -246,7 +246,7 @@
     <h3>🗑️ Zerar</h3>
     <button class="btn sm ghost" style="color:var(--bad)" onclick="resetAll()">Apagar todo o histórico</button>
   </div>
-  <p class="muted" style="text-align:center;font-size:11px;margin-top:18px">Treino Lenize · v1 · Setembro 2026</p>
+  <p class="muted" style="text-align:center;font-size:11px;margin-top:18px">Treino Lenize · v2 · Outubro 2026</p>
 </div>
 
 <!-- Rest overlay -->
@@ -280,16 +280,31 @@
    ============================================================ */
 
 /* ---------- MÊS ATUAL (config reutilizável) ---------- */
+// Outubro tem 5 semanas (28/09 → 01/11): 4 semanas subindo carga + 1 deload.
 const MONTH = {
-  key: '2026-09', year: 2026, month: 8 /*0-idx: setembro*/, label: 'Setembro 2026',
+  key: '2026-10', year: 2026, month: 9 /*0-idx: outubro*/, label: 'Outubro 2026',
   weeks: [
-    { key:'S2', label:'S2 · 07–13/Set', sub:'Base · carga manual', mode:'manual', rir:'RIR 2–3', start:'2026-09-07', end:'2026-09-13' },
-    { key:'S3', label:'S3 · 14–20/Set', sub:'Progressão +5% · pico', mode:'progress', factor:1.05, rir:'RIR 1–2', start:'2026-09-14', end:'2026-09-20' },
-    { key:'S4', label:'S4 · 21–27/Set', sub:'DELOAD −25%', mode:'deload', factor:0.75, rir:'RIR 4', start:'2026-09-21', end:'2026-09-27', deload:true }
+    { key:'S1', label:'S1 · 28/Set–04/Out', sub:'Base · carga manual', mode:'manual', rir:'RIR 2–3', start:'2026-09-28', end:'2026-10-04' },
+    { key:'S2', label:'S2 · 05–11/Out', sub:'Progressão +2,5%', mode:'progress', factor:1.025, rir:'RIR 2', start:'2026-10-05', end:'2026-10-11' },
+    { key:'S3', label:'S3 · 12–18/Out', sub:'Progressão +5%', mode:'progress', factor:1.05, rir:'RIR 1–2', start:'2026-10-12', end:'2026-10-18' },
+    { key:'S4', label:'S4 · 19–25/Out', sub:'Pico +7,5%', mode:'progress', factor:1.075, rir:'RIR 1', start:'2026-10-19', end:'2026-10-25' },
+    { key:'S5', label:'S5 · 26/Out–01/Nov', sub:'DELOAD −25%', mode:'deload', factor:0.75, rir:'RIR 4', start:'2026-10-26', end:'2026-11-01', deload:true }
   ]
 };
 // Baseline week = a primeira semana (onde a carga é manual)
-const BASE_WEEK = 'S2';
+const BASE_WEEK = 'S1';
+// Semanas de deload de meses anteriores (só para colorir o gráfico de evolução).
+const PAST_DELOADS = [['2026-09-21','2026-09-27']];
+// Carga inicial sugerida para a S1, a partir do que ela fez em setembro.
+// Na S1 aparece como sugestão (ela pode editar); da S2 em diante a base é a média real da S1.
+const START_KG = {
+  rt:35, hip1:120, sumo1:26, flex1:35, coice1:16.25, abd1:87.5, infra1:8,
+  mil:20, arn:10, devpol:17.5, elevlat:7, elevfr:10, latpol:2.5, face1:27.5, rdir:17.5, rmart:10,
+  agh:16, smith:20, ext:57.5, bulg:16, uni:12, sumo2:24, adu:95, pant2:15, infra3:8,
+  sup:14, supm:25, supinc:12, peck:25, cruzp:12.5, tcorda:27.5, tcoice:2.5, tfr:12.5,
+  pux:28, puxf:33, remb:20, remc:26, serr:12, pull:18.75, face2:13.75, encol:16.25,
+  hip2:110, sumo3:26, coice2:16.25, abd2:87.5, devpol2:17.5, elevlat2:7, elevfr2:10, latpol2:2.5, face3:25, infra6:8
+};
 
 /* ---------- SCHEDULE: seg..sáb = d1..d6, domingo descanso ---------- */
 const SCHEDULE = { 1:'d1', 2:'d2', 3:'d3', 4:'d4', 5:'d5', 6:'d6' };
@@ -307,8 +322,8 @@ const PLAN = {
       ex('pant1','Panturrilha em pé','Máquina','Panturrilha',4,'15–20'),
     ]},
     { label:'Core', ex:[
-      ex('plank1','Prancha abdominal','Peso corporal','Core',3,'30–45s','Isometria'),
-      ex('infra1','Abdominal infra (elevação de pernas)','Peso corporal','Core',3,'15'),
+      ex('plank1','Prancha abdominal','Peso corporal','Core',3,'45–60s','Isometria'),
+      ex('infra1','Abdominal infra (elevação de pernas)','Anilha/Caneleira','Core',3,'12–15'),
     ]}
   ]},
   d2:{ name:'Ombro + Bíceps', muscles:'Ombros · Bíceps', color:'d2', blocks:[
@@ -333,22 +348,22 @@ const PLAN = {
       ex('ext','Cadeira extensora','Máquina','Quadríceps',4,'12–15'),
       ex('bulg','Agachamento búlgaro','Halteres','Quadríceps',3,'10–12','Cada perna'),
       ex('uni','Agachamento livre unilateral','Halteres','Quadríceps',3,'10–12','Cada perna'),
-      ex('sumo2','Agachamento sumô (foco interno)','Halter','Adutores',3,'12'),
-      ex('adu','Adutor','Máquina','Adutores',4,'15–20'),
-      ex('pant2','Panturrilha sentada','Máquina','Panturrilha',4,'15–20'),
+      ex('sumo2','Agachamento sumô (foco interno)','Halter','Adutores',3,'10–12'),
+      ex('adu','Adutor','Máquina','Adutores',4,'12–15'),
+      ex('pant2','Panturrilha sentada','Máquina','Panturrilha',4,'12–15'),
     ]},
     { label:'Core', ex:[
-      ex('plank3','Prancha abdominal','Peso corporal','Core',3,'30–45s','Isometria'),
-      ex('infra3','Abdominal infra (elevação de pernas)','Peso corporal','Core',3,'15'),
+      ex('plank3','Prancha abdominal','Peso corporal','Core',3,'45–60s','Isometria'),
+      ex('infra3','Abdominal infra (elevação de pernas)','Anilha/Caneleira','Core',3,'12–15'),
     ]}
   ]},
   d4:{ name:'Peitoral + Tríceps', muscles:'Peito · Tríceps', color:'d4', blocks:[
     { label:'Peito', ex:[
       ex('sup','Supino com halter (reto)','Halteres','Peito',4,'8–10'),
-      ex('supinc','Supino inclinado com halter','Halteres','Peito',4,'10–12'),
+      ex('supm','Supino na máquina','Máquina','Peito',4,'10–12','💜 Favorito da Lenize'),
+      ex('supinc','Supino inclinado com halter','Halteres','Peito',3,'10–12'),
       ex('peck','Crucifixo na máquina (peck deck)','Máquina','Peito',3,'12–15'),
       ex('cruzp','Crucifixo na polia','Cabo','Peito',3,'12–15'),
-      ex('supm','Supino máquina ou flexão','Máquina','Peito',3,'12'),
     ]},
     { label:'Tríceps', ex:[
       ex('tcorda','Tríceps corda na polia','Cabo','Tríceps',4,'12–15'),
@@ -383,8 +398,8 @@ const PLAN = {
       ex('face3','Face pull','Cabo','Ombros',3,'15'),
     ]},
     { label:'Core', ex:[
-      ex('plank6','Prancha abdominal','Peso corporal','Core',3,'30–45s','Isometria'),
-      ex('infra6','Abdominal infra (elevação de pernas)','Peso corporal','Core',3,'15'),
+      ex('plank6','Prancha abdominal','Peso corporal','Core',3,'45–60s','Isometria'),
+      ex('infra6','Abdominal infra (elevação de pernas)','Anilha/Caneleira','Core',3,'12–15'),
     ]}
   ]}
 };
@@ -411,6 +426,13 @@ const state = { screen:'Home', week:currentWeekKey(), workoutId:null, session:nu
 function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function dateStr(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function weekObj(k){return MONTH.weeks.find(w=>w.key===k);}
+// Sessão pertence ao ciclo atual? (as chaves S1..S5 se repetem entre meses; o que separa é a data)
+const M_START=MONTH.weeks[0].start, M_END=MONTH.weeks[MONTH.weeks.length-1].end;
+function inMonth(s){return s.date>=M_START && s.date<=M_END;}
+function isDeloadDate(ds){
+  if(MONTH.weeks.some(w=>w.deload&&ds>=w.start&&ds<=w.end))return true;
+  return PAST_DELOADS.some(([a,b])=>ds>=a&&ds<=b);
+}
 function currentWeekKey(){
   const t=todayStr();
   for(const w of MONTH.weeks){ if(t>=w.start && t<=w.end) return w.key; }
@@ -428,7 +450,7 @@ function e1rm(kg,reps){return kg*(1+reps/30);} // Epley
 function baselineAvg(exId){
   const d=getData();
   const rows=[];
-  d.sessions.filter(s=>s.weekKey===BASE_WEEK && s.seriesLog[exId]).forEach(s=>{
+  d.sessions.filter(s=>inMonth(s) && s.weekKey===BASE_WEEK && s.seriesLog[exId]).forEach(s=>{
     Object.values(s.seriesLog[exId]).forEach(x=>{ if(x.kg) rows.push(parseFloat(x.kg)); });
   });
   if(!rows.length) return null;
@@ -436,8 +458,10 @@ function baselineAvg(exId){
 }
 function suggestKg(exId,wk){
   const w=weekObj(wk);
-  if(!w || w.mode==='manual') return null;
-  const base=baselineAvg(exId);
+  if(!w) return null;
+  if(w.mode==='manual') return START_KG[exId]!=null ? START_KG[exId] : null;
+  let base=baselineAvg(exId);
+  if(base==null) base=START_KG[exId]!=null ? START_KG[exId] : null;
   if(base==null) return null;
   return Math.round(base*w.factor*2)/2;
 }
@@ -483,9 +507,9 @@ function renderWeekSel(){
 }
 function renderStats(){
   const d=getData();
-  const ms=d.sessions.filter(s=>s.date.startsWith(MONTH.key)&&s.finished);
+  const ms=d.sessions.filter(s=>inMonth(s)&&s.finished);
   let series=0,ton=0;
-  d.sessions.filter(s=>s.date.startsWith(MONTH.key)).forEach(s=>{
+  d.sessions.filter(s=>inMonth(s)).forEach(s=>{
     Object.entries(s.seriesLog).forEach(([exId,sets])=>{
       Object.values(sets).forEach(x=>{ if(x.done){series++; if(x.kg&&x.reps) ton+=parseFloat(x.kg)*parseInt(x.reps);} });
     });
@@ -510,14 +534,16 @@ function renderCal(){
   const el=document.getElementById('cal');el.innerHTML='';
   document.getElementById('calTitle').textContent=MONTH.label;
   ['D','S','T','Q','Q','S','S'].forEach(x=>{const h=document.createElement('div');h.className='dow';h.textContent=x;el.appendChild(h);});
-  const first=new Date(MONTH.year,MONTH.month,1).getDay();
-  const days=new Date(MONTH.year,MONTH.month+1,0).getDate();
+  // cobre o ciclo inteiro (28/09 a 01/11), não só os dias do mês civil
+  const p=x=>{const [y,m,dd]=x.split('-').map(Number);return new Date(y,m-1,dd);};
+  const startD=p(M_START), endD=p(M_END);
   const d=getData();
-  for(let i=0;i<first;i++){const b=document.createElement('div');el.appendChild(b);}
-  for(let day=1;day<=days;day++){
-    const dow=new Date(MONTH.year,MONTH.month,day).getDay();
+  for(let i=0;i<startD.getDay();i++){const b=document.createElement('div');el.appendChild(b);}
+  for(const cur=new Date(startD);cur<=endD;cur.setDate(cur.getDate()+1)){
+    const day=cur.getDate();
+    const dow=cur.getDay();
     const wid=SCHEDULE[dow];
-    const ds=`${MONTH.key}-${String(day).padStart(2,'0')}`;
+    const ds=dateStr(cur);
     const cell=document.createElement('div');
     cell.className='day'+(wid?' train '+wid:'');
     if(ds===todayStr())cell.className+=' today';
@@ -577,7 +603,8 @@ function exCard(e){
       <div class="inp"><label>Reps</label><input type="number" inputmode="numeric" id="rp_${e.id}_${i}" value="${repVal!==''?repVal:''}" placeholder="${midReps(e.reps)}" onchange="setReps('${e.id}',${i},this.value)"></div>
     </div>`;
   }
-  const sugTxt = sug!=null ? `<span>💡 Sugerido: <b>${sug}kg</b></span>` : (weekObj(state.session.weekKey).mode==='manual'?'<span>✍️ Carga manual (base do mês)</span>':'<span>✍️ Sem base ainda</span>');
+  const manual = weekObj(state.session.weekKey).mode==='manual';
+  const sugTxt = sug!=null ? (manual?`<span>✍️ Base do mês · sugerido <b>${sug}kg</b></span>`:`<span>💡 Sugerido: <b>${sug}kg</b></span>`) : (manual?'<span>✍️ Carga manual (base do mês)</span>':'<span>✍️ Sem base ainda</span>');
   wrap.innerHTML=`
     <div class="ex-h" onclick="toggleEx('${e.id}')">
       <div class="ex-num">${e.sets}×</div>
@@ -774,7 +801,7 @@ function renderExChart(){
     const v=valOf(s);
     const w=document.createElement('div');w.className='bar-wrap';
     const dd=s.date.slice(8)+'/'+s.date.slice(5,7);
-    w.innerHTML=`<div class="bar" style="height:${Math.max(v/max*100,4)}%;background:var(--${s.wk==='S4'?'accent-dark':'primary'})"><span class="val">${v}</span></div><div class="bar-x">${s.wk}<br>${dd}</div>`;
+    w.innerHTML=`<div class="bar" style="height:${Math.max(v/max*100,4)}%;background:var(--${isDeloadDate(s.date)?'accent-dark':'primary'})"><span class="val">${v}</span></div><div class="bar-x">${s.wk}<br>${dd}</div>`;
     bars.appendChild(w);
   });
   // tabela comparativa (últimas 6)
@@ -794,7 +821,7 @@ function renderMuscleVol(){
   const el=document.getElementById('muscleVol');
   const d=getData();
   const vol={};
-  d.sessions.filter(s=>s.weekKey===state.week).forEach(s=>{
+  d.sessions.filter(s=>inMonth(s)&&s.weekKey===state.week).forEach(s=>{
     Object.entries(s.seriesLog).forEach(([id,sets])=>{
       const e=EXMAP[id];if(!e)return;
       const n=Object.values(sets).filter(x=>x.done).length;
