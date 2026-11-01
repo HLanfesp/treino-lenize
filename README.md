@@ -3,13 +3,14 @@
 App de treino de musculação da Lenize — mesmo padrão do seu app de agosto (vanilla JS, `localStorage`, sem dependências), com melhorias.
 
 ## O que tem
-- **Split de 6 dias** (Glúteos+Posterior · Ombro+Bíceps · Quadríceps+Internos · Peito+Tríceps · Costas · Glúteos+Ombros) + core nos dias de inferior. Domingo = descanso.
-- **Periodização mensal:** Outubro (5 semanas): S1 base (manual, com carga inicial sugerida) → S2 +2,5% → S3 +5% → S4 pico +7,5% → S5 deload −25%.
-- **Sugestão automática de carga:** a semana base é preenchida manualmente; nas semanas seguintes o app sugere a carga (aumento ou deload) e é só aceitar ou editar.
+- **5 dias + sábado opcional** (Glúteos & Posterior · Costas & Bíceps A · Quadríceps & Glúteos B · Ombros & Tríceps · Costas B/Bíceps B/Peito · Sáb opcional: Glúteos & Ombros Pump). Domingo = descanso.
+- **Organizado por andar da SmartFit 305N** e com **bisets só onde rendem mais** (polia + polia, costas + peito, core). O timer tem descanso próprio por exercício e no biset avisa "direto para o B".
+- **Periodização mensal:** Novembro (4 semanas): S1 adaptação (manual) → S2 volume +2,5% → S3 choque +5% → S4 deload (−20% carga, −40% séries automático).
+- **Sugestão automática de carga** arredondada para pesos que existem (halter 1/2 kg, barra e máquina 2,5, polia 1,25) + "📒 Última vez" em cada exercício (dupla progressão).
 - **Registro série a série** (carga + reps), barra de progresso e timer de descanso.
 - **Painel de acompanhamento:**
   - Evolução por exercício com 3 métricas: **Carga máxima**, **1RM estimado** (Epley) e **Tonelagem** (kg × reps).
-  - **Volume semanal por músculo vs. meta**, destacando as prioridades ⭐ (glúteos, quadríceps, ombros).
+  - **Volume semanal por músculo vs. meta**, destacando as prioridades ⭐ (glúteos, costas, ombros, bíceps).
   - **Recordes (PRs)** automáticos.
 - **Histórico** e **backup** (exportar/importar JSON).
 
@@ -30,9 +31,9 @@ Edite no `index.html`:
 - `BASE_WEEK` → a semana em que a carga é manual (normalmente a 1ª do mês).
 - `START_KG` → carga inicial sugerida da semana base (tirada do mês anterior).
 - `PAST_DELOADS` → acrescente o deload do mês que terminou (só colore o gráfico).
-- `PLAN` → só se quiser trocar exercícios.
+- `PLAN` → só se quiser trocar exercícios. Exercícios que saírem do plano vão para `LEGACY_EX` (continuam no gráfico e nos PRs).
 
 O histórico registrado (`localStorage`) **não é tocado** por essas edições.
 
 ---
-*Plano completo em `Plano_Treino_Lenize.md`. v2 · Outubro 2026.*
+*Plano completo em `Plano_Treino_Lenize.md`. v3 · Novembro 2026.*

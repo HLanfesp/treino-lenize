@@ -92,6 +92,7 @@
   .ex-notes{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.4;background:var(--surface-2);padding:9px 11px;border-radius:11px}
   .progress{height:9px;background:var(--surface-2);border-radius:6px;overflow:hidden;margin-top:14px}
   .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));width:0;transition:width .3s}
+  .day.opt{opacity:.55;border:1px dashed currentColor}
   .blocklabel{font-size:12px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:.06em;margin:18px 2px 2px}
   /* Rest overlay */
   .rest{position:fixed;inset:0;background:rgba(67,22,68,.96);z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:24px}
@@ -166,7 +167,7 @@
   </div>
 
   <div class="card">
-    <div class="toprow"><h3>📆 <span id="calTitle">Outubro 2026</span></h3></div>
+    <div class="toprow"><h3>📆 <span id="calTitle">Novembro 2026</span></h3></div>
     <div class="cal" id="cal"></div>
   </div>
 </div>
@@ -246,7 +247,7 @@
     <h3>🗑️ Zerar</h3>
     <button class="btn sm ghost" style="color:var(--bad)" onclick="resetAll()">Apagar todo o histórico</button>
   </div>
-  <p class="muted" style="text-align:center;font-size:11px;margin-top:18px">Treino Lenize · v2 · Outubro 2026</p>
+  <p class="muted" style="text-align:center;font-size:11px;margin-top:18px">Treino Lenize · v3 · Novembro 2026</p>
 </div>
 
 <!-- Rest overlay -->
@@ -280,137 +281,219 @@
    ============================================================ */
 
 /* ---------- MÊS ATUAL (config reutilizável) ---------- */
-// Outubro tem 5 semanas (28/09 → 01/11): 4 semanas subindo carga + 1 deload.
+// Novembro: 4 semanas (02/11 → 29/11). 5 dias fixos (seg–sex) + sábado opcional.
+// S1 adaptação aos exercícios novos → S2 volume → S3 choque → S4 deload (menos séries e menos carga).
 const MONTH = {
-  key: '2026-10', year: 2026, month: 9 /*0-idx: outubro*/, label: 'Outubro 2026',
+  key: '2026-11', year: 2026, month: 10 /*0-idx: novembro*/, label: 'Novembro 2026',
   weeks: [
-    { key:'S1', label:'S1 · 28/Set–04/Out', sub:'Base · carga manual', mode:'manual', rir:'RIR 2–3', start:'2026-09-28', end:'2026-10-04' },
-    { key:'S2', label:'S2 · 05–11/Out', sub:'Progressão +2,5%', mode:'progress', factor:1.025, rir:'RIR 2', start:'2026-10-05', end:'2026-10-11' },
-    { key:'S3', label:'S3 · 12–18/Out', sub:'Progressão +5%', mode:'progress', factor:1.05, rir:'RIR 1–2', start:'2026-10-12', end:'2026-10-18' },
-    { key:'S4', label:'S4 · 19–25/Out', sub:'Pico +7,5%', mode:'progress', factor:1.075, rir:'RIR 1', start:'2026-10-19', end:'2026-10-25' },
-    { key:'S5', label:'S5 · 26/Out–01/Nov', sub:'DELOAD −25%', mode:'deload', factor:0.75, rir:'RIR 4', start:'2026-10-26', end:'2026-11-01', deload:true }
+    { key:'S1', label:'S1 · 02–08/Nov', sub:'Adaptação · carga manual', mode:'manual', rir:'RIR 2 · sem drop-set', start:'2026-11-02', end:'2026-11-08' },
+    { key:'S2', label:'S2 · 09–15/Nov', sub:'Volume +2,5% · técnicas 🔥', mode:'progress', factor:1.025, rir:'RIR 1–2 · drop/rest-pause na última', start:'2026-11-09', end:'2026-11-15' },
+    { key:'S3', label:'S3 · 16–22/Nov', sub:'Choque +5% · técnicas 🔥', mode:'progress', factor:1.05, rir:'RIR 0–1 · última série até a falha', start:'2026-11-16', end:'2026-11-22' },
+    { key:'S4', label:'S4 · 23–29/Nov', sub:'DELOAD · −40% séries · −20% carga', mode:'deload', factor:0.8, rir:'RIR 3–4 · sem técnicas', start:'2026-11-23', end:'2026-11-29', deload:true }
   ]
 };
 // Baseline week = a primeira semana (onde a carga é manual)
 const BASE_WEEK = 'S1';
 // Semanas de deload de meses anteriores (só para colorir o gráfico de evolução).
-const PAST_DELOADS = [['2026-09-21','2026-09-27']];
-// Carga inicial sugerida para a S1, a partir do que ela fez em setembro.
-// Na S1 aparece como sugestão (ela pode editar); da S2 em diante a base é a média real da S1.
+const PAST_DELOADS = [['2026-09-21','2026-09-27'],['2026-10-26','2026-11-01']];
+// Carga inicial sugerida para a S1 (a partir de outubro, arredondada a pesos reais).
+// Exercícios novos têm estimativa conservadora — ajuste na S1.
 const START_KG = {
-  rt:35, hip1:120, sumo1:26, flex1:35, coice1:16.25, abd1:87.5, infra1:8,
-  mil:20, arn:10, devpol:17.5, elevlat:7, elevfr:10, latpol:2.5, face1:27.5, rdir:17.5, rmart:10,
-  agh:16, smith:20, ext:57.5, bulg:16, uni:12, sumo2:24, adu:95, pant2:15, infra3:8,
-  sup:14, supm:25, supinc:12, peck:25, cruzp:12.5, tcorda:27.5, tcoice:2.5, tfr:12.5,
-  pux:28, puxf:33, remb:20, remc:26, serr:12, pull:18.75, face2:13.75, encol:16.25,
-  hip2:110, sumo3:26, coice2:16.25, abd2:87.5, devpol2:17.5, elevlat2:7, elevfr2:10, latpol2:2.5, face3:25, infra6:8
-};
+  hip1:125, rt:36, bulgg:16, sumo1:16, coice1:18.75, abdcabo:5, flex1:37.5, abd1:92.5, infra1:10,
+  pux:30, puxf:35, remc:27.5, pull:20, face2:15, rdir:18, rinc:7, crinv:4, rmart:10,
+  smith:22.5, passada:8, hip3:20, sumo2:32, aflat:6, ext:60, abd3:90, adu:100, pant2:5, infra3:10,
+  mil:20, arn:10, elevlat:8, crinv2:4, elevp:4, latpol:2.5, face1:28.75, tcorda:28.75, tover:15,
+  remb:20, serr:12, pullh:10, supm:10, supinc:12, cruzh:6, rscott:15, rconc:6, puxu:15, rcabo:5, circ5:12,
+  hip2:90, sumo3:30, desh2:14, elevlat2:7, coice2:16.25, abdcabo2:5, face3:30, latpol2:2.5
+}
 
-/* ---------- SCHEDULE: seg..sáb = d1..d6, domingo descanso ---------- */
+/* ---------- SCHEDULE: seg..sex = d1..d5 (fixos) · sáb = d6 (opcional) · domingo descanso ---------- */
 const SCHEDULE = { 1:'d1', 2:'d2', 3:'d3', 4:'d4', 5:'d5', 6:'d6' };
+const OPTIONAL_DAYS = ['d6'];
 
-/* ---------- PLANO (6 dias) ---------- */
+/* ---------- PLANO (5 dias + sábado opcional) ----------
+   ex(id, nome, equipamento, músculo, séries, reps, notas, descanso_s)
+   Organizado por ANDAR da SmartFit 305N: ⬇️ Piso inferior (pesos livres, Smith, máquinas de anilha) ·
+   🟢 Térreo (máquinas de perna e puxada) · 🪢 Polia · ⬆️ Piso superior (cardio, core, alongamento).
+   Biset só com equipamentos do mesmo lugar (halter+halter, polia+polia). A tem descanso 0; o descanso vem depois do B.
+   Máquinas de perna do térreo = séries normais em sequência (sem biset). */
 const PLAN = {
-  d1:{ name:'Glúteos + Posterior', muscles:'Glúteos · Posterior de coxa · Core', color:'d1', blocks:[
-    { label:'Principal', ex:[
-      ex('rt','Terra romeno (stiff)','Barra/Halteres','Posterior',4,'8–10'),
-      ex('hip1','Elevação pélvica (hip thrust)','Barra','Glúteos',4,'8–12'),
-      ex('sumo1','Agachamento sumô','Halter/Barra','Glúteos',4,'10–12'),
-      ex('flex1','Cadeira flexora','Máquina','Posterior',4,'12–15'),
-      ex('coice1','Coice na polia','Cabo','Glúteos',3,'12–15','Cada perna'),
-      ex('abd1','Abdutor','Máquina','Glúteos',4,'15–20','Foco glúteo médio'),
-      ex('pant1','Panturrilha em pé','Máquina','Panturrilha',4,'15–20'),
+  d1:{ name:'Glúteos & Posterior', muscles:'Glúteos ⭐ · Posterior de coxa · Core', color:'d1', blocks:[
+    { label:'⬇️ Piso inferior · Força', ex:[
+      ex('hip1','Elevação pélvica (hip thrust)','Barra','Glúteos',5,'6–10','Aqueça: 5 min bike + 2×15 ponte com mini band · ⏸️ Rest-pause na última (S2–S3)',120),
+      ex('rt','Terra romeno (stiff)','Barra/Halteres','Posterior',4,'8–10','Desça em 3s, quadril para trás',120),
     ]},
-    { label:'Core', ex:[
-      ex('plank1','Prancha abdominal','Peso corporal','Core',3,'45–60s','Isometria'),
-      ex('infra1','Abdominal infra (elevação de pernas)','Anilha/Caneleira','Core',3,'12–15'),
+    { label:'⬇️ Piso inferior · Halteres', ex:[
+      ex('bulgg','Búlgaro foco glúteo (tronco inclinado)','Halteres','Glúteos',4,'10–12','Cada perna · passo longo',90),
+      ex('sumo1','Agachamento sumô com pausa','Halter','Glúteos',4,'12–15','Pausa 2s embaixo',75),
+    ]},
+    { label:'🔗 Biset 1 · Polia (tornozeleira, mesma estação)', ex:[
+      ex('coice1','A · Coice na polia','Cabo','Glúteos',4,'12–15','Cada perna · segure 1s em cima',0),
+      ex('abdcabo','B · Abdução de quadril em pé na polia','Cabo','Glúteos',4,'15','Cada perna · só trocar a posição',60),
+    ]},
+    { label:'🟢 Térreo · Máquinas (em sequência)', ex:[
+      ex('flex1','Cadeira flexora','Máquina','Posterior',4,'10–12','🔥 Drop-set na última (S2–S3)',75),
+      ex('abd1','Abdutor (tronco inclinado à frente)','Máquina','Glúteos',4,'15–20','🔥 Drop-set na última (S2–S3)',60),
+    ]},
+    { label:'🔗 Core · ⬆️ Piso superior (colchonete)', ex:[
+      ex('plank1','A · Prancha abdominal','Peso corporal','Core',3,'45–60s','Isometria',0),
+      ex('infra1','B · Abdominal infra (elevação de pernas)','Anilha/Caneleira','Core',3,'12–15','Depois: 5 min de alongamento',45),
     ]}
   ]},
-  d2:{ name:'Ombro + Bíceps', muscles:'Ombros · Bíceps', color:'d2', blocks:[
-    { label:'Ombros', ex:[
-      ex('mil','Desenvolvimento militar','Barra/Halteres','Ombros',4,'8–10'),
-      ex('arn','Desenvolvimento Arnold','Halteres','Ombros',3,'10–12'),
-      ex('devpol','Desenvolvimento na polia','Cabo','Ombros',3,'10–12'),
-      ex('elevlat','Elevação lateral','Halteres','Ombros',4,'12–15','🔗 Bi-set com Elevação frontal'),
-      ex('elevfr','Elevação frontal','Halteres','Ombros',4,'12–15','🔗 Bi-set com Elevação lateral'),
-      ex('latpol','Elevação lateral na polia','Cabo','Ombros',3,'15','Unilateral'),
-      ex('face1','Face pull','Cabo','Ombros',4,'15','Deltoide posterior'),
+  d2:{ name:'Costas & Bíceps A', muscles:'Costas ⭐ · Bíceps ⭐ · Deltoide posterior', color:'d5', blocks:[
+    { label:'🟢 Térreo · Puxadas (em sequência)', ex:[
+      ex('pux','Puxada frontal aberta','Máquina','Costas',4,'8–10','🔥 Drop-set na última (S2–S3)',120),
+      ex('puxf','Puxada pegada neutra/fechada','Máquina','Costas',4,'10–12','',90),
+      ex('remc','Remada baixa com cabo','Cabo','Costas',4,'10–12','Segure 1s com as escápulas juntas',90),
     ]},
-    { label:'Bíceps', ex:[
-      ex('rdir','Rosca direta com barra','Barra','Bíceps',4,'10–12','🔗 Bi-set com Rosca martelo'),
-      ex('rmart','Rosca martelo','Halteres','Bíceps',4,'10–12','🔗 Bi-set com Rosca direta'),
+    { label:'🔗 Biset 1 · Polia alta (mesma estação)', ex:[
+      ex('pull','A · Pullover na polia','Cabo','Costas',4,'12–15','Braços estendidos · alongue bem em cima',0),
+      ex('face2','B · Face pull','Cabo','Ombros',3,'15','Troque a barra pela corda',60),
+    ]},
+    { label:'⬇️ Piso inferior · Bíceps', ex:[
+      ex('rdir','Rosca direta com barra','Barra','Bíceps',4,'8–10','',90),
+      ex('rinc','Rosca inclinada (banco 45°)','Halteres','Bíceps',4,'10–12','Braço alongado atrás do corpo',75),
+    ]},
+    { label:'🔗 Biset 2 · Piso inferior (halteres)', ex:[
+      ex('crinv','A · Crucifixo inverso com halteres','Halteres','Ombros',3,'15','Tronco inclinado',0),
+      ex('rmart','B · Rosca martelo','Halteres','Bíceps',3,'12','🔥 Drop-set na última (S2–S3)',60),
+    ]},
+    { label:'⬆️ Piso superior · Cardio', ex:[
+      ex('hiit2','HIIT na bike','Bike','Cardio',1,'10×30s','30s forte / 60s leve · ~15 min · carga = nível da bike',0),
     ]}
   ]},
-  d3:{ name:'Quadríceps + Internos', muscles:'Quadríceps · Adutores · Core', color:'d3', blocks:[
-    { label:'Principal', ex:[
-      ex('agh','Agachamento livre com halter','Halteres','Quadríceps',4,'8–10'),
-      ex('smith','Agachamento no Smith','Smith','Quadríceps',4,'10–12'),
-      ex('ext','Cadeira extensora','Máquina','Quadríceps',4,'12–15'),
-      ex('bulg','Agachamento búlgaro','Halteres','Quadríceps',3,'10–12','Cada perna'),
-      ex('uni','Agachamento livre unilateral','Halteres','Quadríceps',3,'10–12','Cada perna'),
-      ex('sumo2','Agachamento sumô (foco interno)','Halter','Adutores',3,'10–12'),
-      ex('adu','Adutor','Máquina','Adutores',4,'12–15'),
-      ex('pant2','Panturrilha sentada','Máquina','Panturrilha',4,'12–15'),
+  d3:{ name:'Quadríceps & Glúteos B', muscles:'Quadríceps · Glúteos ⭐ · Adutores · Core', color:'d3', blocks:[
+    { label:'⬇️ Piso inferior · Força', ex:[
+      ex('smith','Agachamento no Smith','Smith','Quadríceps',5,'8–10','Pés levemente à frente · ⏸️ Rest-pause na última (S2–S3)',120),
     ]},
-    { label:'Core', ex:[
-      ex('plank3','Prancha abdominal','Peso corporal','Core',3,'45–60s','Isometria'),
-      ex('infra3','Abdominal infra (elevação de pernas)','Anilha/Caneleira','Core',3,'12–15'),
+    { label:'⬇️ Piso inferior · Halteres', ex:[
+      ex('passada','Passada andando','Halteres','Quadríceps',4,'12 passos','Cada perna · carga = cada halter',90),
+      ex('hip3','Elevação pélvica com halter (costas no banco)','Halter','Glúteos',4,'12–15','Halter no quadril · segure 2s em cima',75),
+    ]},
+    { label:'⬇️ Piso inferior · Internos', ex:[
+      ex('sumo2','Agachamento sumô (foco interno)','Halter','Adutores',4,'12','',75),
+      ex('aflat','Afundo lateral com halter','Halter','Adutores',3,'10','Cada lado',60),
+    ]},
+    { label:'🟢 Térreo · Máquinas (em sequência)', ex:[
+      ex('ext','Cadeira extensora','Máquina','Quadríceps',4,'12–15','🔥 Drop-set na última (S2–S3)',75),
+      ex('abd3','Abdutor','Máquina','Glúteos',4,'20','Últimas 5 reps parciais',60),
+      ex('adu','Adutor','Máquina','Adutores',3,'15','',60),
+      ex('pant2','Panturrilha sentada','Máquina','Panturrilha',3,'15–20','',45),
+    ]},
+    { label:'🔗 Core · ⬆️ Piso superior (colchonete)', ex:[
+      ex('plankl','A · Prancha lateral','Peso corporal','Core',3,'30–45s','Cada lado',0),
+      ex('infra3','B · Abdominal infra (elevação de pernas)','Anilha/Caneleira','Core',3,'12–15','Depois: 5 min de alongamento',45),
     ]}
   ]},
-  d4:{ name:'Peitoral + Tríceps', muscles:'Peito · Tríceps', color:'d4', blocks:[
-    { label:'Peito', ex:[
-      ex('sup','Supino com halter (reto)','Halteres','Peito',4,'8–10'),
-      ex('supm','Supino na máquina','Máquina','Peito',4,'10–12','💜 Favorito da Lenize'),
-      ex('supinc','Supino inclinado com halter','Halteres','Peito',3,'10–12'),
-      ex('peck','Crucifixo na máquina (peck deck)','Máquina','Peito',3,'12–15'),
-      ex('cruzp','Crucifixo na polia','Cabo','Peito',3,'12–15'),
+  d4:{ name:'Ombros 360° & Tríceps', muscles:'Ombros ⭐ · Tríceps', color:'d2', blocks:[
+    { label:'⬇️ Piso inferior · Força', ex:[
+      ex('mil','Desenvolvimento militar','Halteres','Ombros',5,'8–10','Sentada, encosto ~80°',120),
     ]},
-    { label:'Tríceps', ex:[
-      ex('tcorda','Tríceps corda na polia','Cabo','Tríceps',4,'12–15'),
-      ex('tcoice','Tríceps coice','Halter/Cabo','Tríceps',3,'12–15','Cada braço'),
-      ex('tfr','Tríceps francês / testa','Barra/Halter','Tríceps',3,'12'),
+    { label:'⬇️ Piso inferior · Halteres', ex:[
+      ex('arn','Desenvolvimento Arnold','Halteres','Ombros',4,'10–12','',90),
+      ex('elevlat','Elevação lateral','Halteres','Ombros',4,'12–15','🔥 Drop-set duplo na última (S2–S3)',60),
+    ]},
+    { label:'⬇️ Piso inferior · Deltoide posterior + finalizador', ex:[
+      ex('crinv2','Crucifixo inverso com halteres','Halteres','Ombros',3,'15','Tronco inclinado',60),
+      ex('elevp','Elevação lateral parcial (até a falha)','Halteres','Ombros',3,'20–30','Carga leve · amplitude curta',45),
+    ]},
+    { label:'🔗 Biset 1 · Polia (um lado baixo, outro alto)', ex:[
+      ex('latpol','A · Elevação lateral na polia (cabo por trás)','Cabo','Ombros',3,'12–15','Unilateral · cada braço · polia baixa',0),
+      ex('face1','B · Face pull','Cabo','Ombros',3,'15','Polia alta · corda',60),
+    ]},
+    { label:'🔗 Biset 2 · Polia alta (tríceps)', ex:[
+      ex('tcorda','A · Tríceps corda na polia','Cabo','Tríceps',4,'12–15','',0),
+      ex('tover','B · Tríceps francês na polia (acima da cabeça)','Cabo','Tríceps',4,'10–12','Mesma corda, de costas para a polia',75),
+    ]},
+    { label:'⬆️ Piso superior · Cardio', ex:[
+      ex('hiit4','HIIT na esteira inclinada','Esteira','Cardio',1,'8×40s','40s forte / 80s caminhando · ~16 min · carga = velocidade',0),
     ]}
   ]},
-  d5:{ name:'Costas', muscles:'Dorsais · Trapézio', color:'d5', blocks:[
-    { label:'Principal', ex:[
-      ex('pux','Puxada frontal','Máquina','Costas',4,'10–12'),
-      ex('puxf','Puxada (pegada fechada/neutra)','Máquina','Costas',3,'10–12'),
-      ex('remb','Remada curvada com barra','Barra','Costas',4,'10–12'),
-      ex('remc','Remada baixa com cabo','Cabo','Costas',4,'10–12'),
-      ex('serr','Remada unilateral com halter (serrote)','Halter','Costas',3,'10–12','Cada braço'),
-      ex('pull','Pullover na polia','Cabo','Costas',3,'12–15','Braços estendidos'),
-      ex('face2','Face pull','Cabo','Ombros',3,'15'),
-      ex('encol','Encolhimento (trapézio)','Halteres','Trapézio',3,'15'),
+  d5:{ name:'Costas B · Bíceps B · Peito', muscles:'Costas ⭐ · Bíceps ⭐ · Peito', color:'d4', blocks:[
+    { label:'⬇️ Piso inferior · Força', ex:[
+      ex('remb','Remada curvada com barra','Barra','Costas',4,'8–10','',120),
+    ]},
+    { label:'🔗 Biset 1 · Antagonistas (costas + peito, mesmo banco)', ex:[
+      ex('serr','A · Remada serrote','Halter','Costas',4,'10–12','Cada braço',0),
+      ex('supinc','B · Supino inclinado com halteres','Halteres','Peito',3,'10–12','',90),
+    ]},
+    { label:'⬇️ Piso inferior · Halteres', ex:[
+      ex('pullh','Pullover com halter no banco','Halter','Costas',3,'12','',75),
+      ex('cruzh','Crucifixo com halteres','Halteres','Peito',3,'12–15','',60),
+    ]},
+    { label:'💜 Peito', ex:[
+      ex('supm','Supino na máquina','Máquina','Peito',3,'10–12','💜 Favorito da Lenize',90),
+    ]},
+    { label:'⬇️ Piso inferior · Bíceps', ex:[
+      ex('rscott','Rosca Scott','Barra W','Bíceps',3,'10–12','',75),
+      ex('rconc','Rosca concentrada','Halter','Bíceps',3,'12','Cada braço',60),
+    ]},
+    { label:'🔗 Biset 2 · Polia (um lado alto, outro baixo)', ex:[
+      ex('puxu','A · Puxada unilateral no cabo (ajoelhada)','Cabo','Costas',3,'12','Cada braço · polia alta',0),
+      ex('rcabo','B · Rosca no cabo (braço atrás do corpo)','Cabo','Bíceps',3,'12–15','Unilateral · polia baixa · 🔥 Drop-set na última (S2–S3)',75),
+    ]},
+    { label:'⚡ Finalizador · Piso inferior', ex:[
+      ex('circ5','Circuito: 15 kettlebell swing + 10 burpees + 30 escaladores','Kettlebell','Cardio',3,'1 volta','Sem pausa dentro da volta · 60s entre voltas · carga = kettlebell',60),
+    ]},
+    { label:'🔗 Core · ⬆️ Piso superior (colchonete)', ex:[
+      ex('plank5','A · Prancha com toque no ombro','Peso corporal','Core',3,'30–40s','',0),
+      ex('abdrem','B · Abdominal remador','Peso corporal','Core',3,'15','Depois: 5 min de alongamento',45),
     ]}
   ]},
-  d6:{ name:'Glúteos + Ombros', muscles:'Glúteos · Ombros · Core · Prioridades', color:'d6', blocks:[
-    { label:'Glúteos', ex:[
-      ex('hip2','Elevação pélvica (hip thrust)','Barra','Glúteos',4,'8–12'),
-      ex('sumo3','Agachamento sumô','Halter/Barra','Glúteos',3,'10–12'),
-      ex('coice2','Coice na polia','Cabo','Glúteos',3,'12–15','Cada perna'),
-      ex('abd2','Abdutor','Máquina','Glúteos',4,'15–20'),
+  d6:{ name:'Sábado opcional · Glúteos & Ombros Pump', muscles:'Glúteos ⭐ · Ombros ⭐ · Cardio · Opcional', color:'d6', blocks:[
+    { label:'⬇️ Piso inferior · Glúteos', ex:[
+      ex('hip2','Elevação pélvica (hip thrust)','Barra','Glúteos',3,'12–15','~70% da carga de segunda',75),
+      ex('sumo3','Agachamento sumô','Halter','Glúteos',3,'15','',60),
     ]},
-    { label:'Ombros', ex:[
-      ex('devpol2','Desenvolvimento na polia','Cabo','Ombros',4,'10–12'),
-      ex('elevlat2','Elevação lateral','Halteres','Ombros',4,'12–15','🔗 Bi-set com Elevação frontal'),
-      ex('elevfr2','Elevação frontal','Halteres','Ombros',4,'12–15','🔗 Bi-set com Elevação lateral'),
-      ex('latpol2','Elevação lateral na polia','Cabo','Ombros',3,'15','Unilateral'),
-      ex('face3','Face pull','Cabo','Ombros',3,'15'),
+    { label:'⬇️ Piso inferior · Ombros', ex:[
+      ex('desh2','Desenvolvimento com halteres','Halteres','Ombros',3,'12','',75),
+      ex('elevlat2','Elevação lateral','Halteres','Ombros',3,'15','',45),
     ]},
-    { label:'Core', ex:[
-      ex('plank6','Prancha abdominal','Peso corporal','Core',3,'45–60s','Isometria'),
-      ex('infra6','Abdominal infra (elevação de pernas)','Anilha/Caneleira','Core',3,'12–15'),
+    { label:'🔗 Biset 1 · Polia (tornozeleira)', ex:[
+      ex('coice2','A · Coice na polia','Cabo','Glúteos',3,'15','Cada perna',0),
+      ex('abdcabo2','B · Abdução de quadril em pé na polia','Cabo','Glúteos',3,'15','Cada perna',45),
+    ]},
+    { label:'🔗 Biset 2 · Polia', ex:[
+      ex('face3','A · Face pull','Cabo','Ombros',3,'15','Polia alta',0),
+      ex('latpol2','B · Elevação lateral na polia','Cabo','Ombros',3,'15','Cada braço · polia baixa',45),
+    ]},
+    { label:'⬆️ Piso superior · Cardio', ex:[
+      ex('cardio6','Esteira inclinada (zona 2)','Esteira','Cardio',1,'25–30 min','Inclinação 8–12%, ritmo de conversa · depois alongamento',0),
     ]}
   ]}
 };
-function ex(id,name,equip,muscle,sets,reps,notes){return {id,name,equip,muscle,sets,reps,notes:notes||''};}
+function ex(id,name,equip,muscle,sets,reps,notes,rest){return {id,name,equip,muscle,sets,reps,notes:notes||'',rest};}
 
-// Metas de séries semanais por músculo (para o painel de volume). Prioridades marcadas.
+// Metas de séries semanais por músculo (5 dias fixos; o sábado opcional soma por cima). Prioridades ⭐.
 const MUSCLE_TARGET = {
-  'Glúteos':{goal:22,prio:true}, 'Quadríceps':{goal:18,prio:true}, 'Ombros':{goal:20,prio:true},
-  'Posterior':{goal:12}, 'Adutores':{goal:8}, 'Peito':{goal:14}, 'Costas':{goal:16},
-  'Tríceps':{goal:10}, 'Bíceps':{goal:10}, 'Trapézio':{goal:4}, 'Panturrilha':{goal:8}, 'Core':{goal:9}
-};
+  'Glúteos':{goal:32,prio:true}, 'Costas':{goal:30,prio:true}, 'Ombros':{goal:30,prio:true}, 'Bíceps':{goal:20,prio:true},
+  'Quadríceps':{goal:13}, 'Posterior':{goal:8}, 'Adutores':{goal:10}, 'Peito':{goal:9},
+  'Tríceps':{goal:8}, 'Panturrilha':{goal:3}, 'Core':{goal:18}
+}
+
+// Exercícios de meses anteriores que saíram do plano — mantidos só para o gráfico de evolução e PRs.
+const LEGACY_EX = {
+  pant1:{name:'Panturrilha em pé',equip:'Máquina',muscle:'Panturrilha',sets:4,reps:'15–20'},
+  devpol:{name:'Desenvolvimento na polia',equip:'Cabo',muscle:'Ombros',sets:3,reps:'10–12'},
+  elevfr:{name:'Elevação frontal',equip:'Halteres',muscle:'Ombros',sets:4,reps:'12–15'},
+  agh:{name:'Agachamento livre com halter',equip:'Halteres',muscle:'Quadríceps',sets:4,reps:'8–10'},
+  bulg:{name:'Agachamento búlgaro',equip:'Halteres',muscle:'Quadríceps',sets:3,reps:'10–12'},
+  uni:{name:'Agachamento livre unilateral',equip:'Halteres',muscle:'Quadríceps',sets:3,reps:'10–12'},
+  plank3:{name:'Prancha abdominal',equip:'Peso corporal',muscle:'Core',sets:3,reps:'45–60s'},
+  sup:{name:'Supino com halter (reto)',equip:'Halteres',muscle:'Peito',sets:4,reps:'8–10'},
+  peck:{name:'Crucifixo na máquina (peck deck)',equip:'Máquina',muscle:'Peito',sets:3,reps:'12–15'},
+  cruzp:{name:'Crucifixo na polia',equip:'Cabo',muscle:'Peito',sets:3,reps:'12–15'},
+  tcoice:{name:'Tríceps coice',equip:'Halter/Cabo',muscle:'Tríceps',sets:3,reps:'12–15'},
+  tfr:{name:'Tríceps francês / testa',equip:'Barra/Halter',muscle:'Tríceps',sets:3,reps:'12'},
+  encol:{name:'Encolhimento (trapézio)',equip:'Halteres',muscle:'Trapézio',sets:3,reps:'15'},
+  abd2:{name:'Abdutor',equip:'Máquina',muscle:'Glúteos',sets:4,reps:'15–20'},
+  devpol2:{name:'Desenvolvimento na polia',equip:'Cabo',muscle:'Ombros',sets:4,reps:'10–12'},
+  elevfr2:{name:'Elevação frontal',equip:'Halteres',muscle:'Ombros',sets:4,reps:'12–15'},
+  plank6:{name:'Prancha abdominal',equip:'Peso corporal',muscle:'Core',sets:3,reps:'45–60s'},
+  infra6:{name:'Abdominal infra (elevação de pernas)',equip:'Anilha/Caneleira',muscle:'Core',sets:3,reps:'12–15'}
+}
+// Nomes dos dias até outubro/2026 (split antigo), para o histórico não mostrar o nome novo em treinos antigos.
+const LEGACY_DAYS = { before:'2026-11-02', names:{d1:'Glúteos + Posterior',d2:'Ombro + Bíceps',d3:'Quadríceps + Internos',d4:'Peitoral + Tríceps',d5:'Costas',d6:'Glúteos + Ombros'} };
 
 /* ---------- STORAGE ---------- */
 const KEY='treino_lenize_data';
@@ -440,7 +523,7 @@ function currentWeekKey(){
   if(t < MONTH.weeks[0].start) return MONTH.weeks[0].key;
   return MONTH.weeks[MONTH.weeks.length-1].key;
 }
-function allEx(){const m={};for(const dk in PLAN)PLAN[dk].blocks.forEach(b=>b.ex.forEach(e=>m[e.id]={...e,day:dk}));return m;}
+function allEx(){const m={};for(const id in LEGACY_EX)m[id]={id,...LEGACY_EX[id],day:null,legacy:true};for(const dk in PLAN)PLAN[dk].blocks.forEach(b=>b.ex.forEach(e=>m[e.id]={...e,day:dk}));return m;}
 const EXMAP = allEx();
 function midReps(r){const m=(r||'').match(/(\d+)/g);if(!m)return 10;return m.length>1?Math.round((+m[0]+ +m[1])/2):+m[0];}
 function e1rm(kg,reps){return kg*(1+reps/30);} // Epley
@@ -456,6 +539,26 @@ function baselineAvg(exId){
   if(!rows.length) return null;
   return rows.reduce((a,b)=>a+b,0)/rows.length;
 }
+// Arredonda para pesos que existem na academia (halter 1 kg / 2 kg acima de 10; barra e máquina 2,5; cabo 1,25).
+function roundKg(kg,equip){
+  const q=equip||'';
+  let step=0.5;
+  if(/Cabo/.test(q)) step=1.25;
+  else if(/Máquina|Barra|Smith/.test(q)) step=2.5;
+  else if(/Halter|Kettlebell/.test(q)) step=kg>=10?2:1;
+  return Math.round(kg/step)*step;
+}
+// Deload corta ~40% das séries (mínimo 1).
+function setsFor(e,wk){const w=weekObj(wk||state.session.weekKey);return (w&&w.deload)?Math.max(1,Math.round(e.sets*0.6)):e.sets;}
+// Último registro deste exercício antes de hoje (qualquer mês) → "Última: 20kg × 10".
+function lastLog(exId){
+  const t=todayStr();
+  const ss=getData().sessions.filter(s=>s.date<t&&s.seriesLog[exId]&&Object.values(s.seriesLog[exId]).some(x=>x.done)).sort((a,b)=>a.date<b.date?1:-1);
+  if(!ss.length)return null;
+  const rows=Object.values(ss[0].seriesLog[exId]).filter(x=>x.done);
+  const kg=Math.max(...rows.map(x=>parseFloat(x.kg)||0));
+  return {kg, reps:rows.map(x=>x.reps).join('/'), date:ss[0].date};
+}
 function suggestKg(exId,wk){
   const w=weekObj(wk);
   if(!w) return null;
@@ -463,7 +566,7 @@ function suggestKg(exId,wk){
   let base=baselineAvg(exId);
   if(base==null) base=START_KG[exId]!=null ? START_KG[exId] : null;
   if(base==null) return null;
-  return Math.round(base*w.factor*2)/2;
+  return roundKg(base*w.factor,(EXMAP[exId]||{}).equip);
 }
 
 /* ---------- NAV ---------- */
@@ -484,7 +587,7 @@ function renderHome(){
   const wid=SCHEDULE[dow];
   document.getElementById('homeWeek').textContent = w.label + ' · ' + w.sub;
   if(wid){
-    document.getElementById('homeSub').textContent = 'Hoje: '+PLAN[wid].name;
+    document.getElementById('homeSub').textContent = (OPTIONAL_DAYS.includes(wid)?'Hoje (opcional): ':'Hoje: ')+PLAN[wid].name;
     document.getElementById('startBtn').style.display='block';
     document.getElementById('startBtn').textContent = 'Iniciar: '+PLAN[wid].name+' →';
   } else {
@@ -525,7 +628,7 @@ function calcStreak(d){
   for(let i=0;i<60;i++){
     const ds=dateStr(cur); const dow=cur.getDay();
     if(done.has(ds)){streak++;}
-    else if(dow!==0 && ds<=todayStr()){ if(ds<todayStr()) break; } // dia de treino perdido quebra (exceto hoje ainda em aberto)
+    else if(dow!==0 && !OPTIONAL_DAYS.includes(SCHEDULE[dow]) && ds<=todayStr()){ if(ds<todayStr()) break; } // dia de treino perdido quebra (exceto hoje ainda em aberto)
     cur.setDate(cur.getDate()-1);
   }
   return streak;
@@ -545,7 +648,7 @@ function renderCal(){
     const wid=SCHEDULE[dow];
     const ds=dateStr(cur);
     const cell=document.createElement('div');
-    cell.className='day'+(wid?' train '+wid:'');
+    cell.className='day'+(wid?' train '+wid:'')+(OPTIONAL_DAYS.includes(wid)?' opt':'');
     if(ds===todayStr())cell.className+=' today';
     if(d.sessions.find(s=>s.date===ds&&s.finished))cell.className+=' done';
     cell.innerHTML=`<span class="n">${day}</span>`;
@@ -583,15 +686,17 @@ function renderWorkout(){
   });
   updateProg();
 }
-function dayName(wid){return {d1:'Dia 1',d2:'Dia 2',d3:'Dia 3',d4:'Dia 4',d5:'Dia 5',d6:'Dia 6'}[wid];}
+function dayName(wid){return {d1:'Dia 1 · Seg',d2:'Dia 2 · Ter',d3:'Dia 3 · Qua',d4:'Dia 4 · Qui',d5:'Dia 5 · Sex',d6:'Dia 6 · Sáb (opcional)'}[wid];}
 function exCard(e){
   const log=state.session.seriesLog[e.id]||{};
   const wrap=document.createElement('div');wrap.className='ex';wrap.id='ex_'+e.id;
   const done=Object.values(log).filter(x=>x.done).length;
-  const dot=done===0?'':(done>=e.sets?'full':'part');
+  const nSets=setsFor(e);
+  const dot=done===0?'':(done>=nSets?'full':'part');
   const sug=suggestKg(e.id,state.session.weekKey);
+  const last=lastLog(e.id);
   let rows='';
-  for(let i=1;i<=e.sets;i++){
+  for(let i=1;i<=nSets;i++){
     const s=log['s'+i]||{};
     const kgVal=s.kg!=null?s.kg:'';
     const repVal=s.reps!=null?s.reps:'';
@@ -607,12 +712,13 @@ function exCard(e){
   const sugTxt = sug!=null ? (manual?`<span>✍️ Base do mês · sugerido <b>${sug}kg</b></span>`:`<span>💡 Sugerido: <b>${sug}kg</b></span>`) : (manual?'<span>✍️ Carga manual (base do mês)</span>':'<span>✍️ Sem base ainda</span>');
   wrap.innerHTML=`
     <div class="ex-h" onclick="toggleEx('${e.id}')">
-      <div class="ex-num">${e.sets}×</div>
+      <div class="ex-num">${nSets}×</div>
       <div class="ex-info"><div class="nm">${e.name}</div><div class="meta">${e.muscle} · ${e.equip} · ${e.reps} reps</div></div>
       <div class="ex-dot ${dot}" id="dot_${e.id}"></div>
     </div>
     <div class="ex-body">
-      <div class="ex-scheme"><span><b>${e.sets}</b> séries × <b>${e.reps}</b></span>${sugTxt}</div>
+      <div class="ex-scheme"><span><b>${nSets}</b> séries × <b>${e.reps}</b>${e.rest!=null?` · ⏱️ ${e.rest?e.rest+'s':'direto p/ o próximo'}`:''}</span>${sugTxt}</div>
+      ${last?`<div class="muted" style="font-size:11px;margin-top:4px">📒 Última vez: <b>${last.kg}kg</b> × ${last.reps} · bateu o topo das reps em todas? suba 1 degrau de carga</div>`:''}
       ${e.notes?`<div class="biset-tag">${e.notes}</div>`:''}
       ${rows}
     </div>`;
@@ -660,11 +766,11 @@ function updateDot(exId){
   const dotEl=document.getElementById('dot_'+exId); if(!dotEl)return;
   const e=EXMAP[exId]; const log=(state.session.seriesLog[exId])||{};
   const done=Object.values(log).filter(x=>x.done).length;
-  dotEl.className='ex-dot '+(done===0?'':(done>=e.sets?'full':'part'));
+  dotEl.className='ex-dot '+(done===0?'':(done>=setsFor(e)?'full':'part'));
 }
 function updateProg(){
   const P=PLAN[state.workoutId];let total=0,done=0;
-  P.blocks.forEach(b=>b.ex.forEach(e=>{total+=e.sets;const l=state.session.seriesLog[e.id]||{};done+=Object.values(l).filter(x=>x.done).length;}));
+  P.blocks.forEach(b=>b.ex.forEach(e=>{total+=setsFor(e);const l=state.session.seriesLog[e.id]||{};done+=Object.values(l).filter(x=>x.done).length;}));
   document.getElementById('wBar').style.width=(total?done/total*100:0)+'%';
   document.getElementById('wProg').textContent=`${done} / ${total} séries`;
   document.getElementById('finishBtn').style.display= done>0?'block':'none';
@@ -678,9 +784,22 @@ function finishWorkout(){
 /* ---------- REST TIMER (baseado em horário final; sobrevive ao 2º plano) ---------- */
 const REST_KEY='treino_lenize_rest';
 function startRest(exId,i){
-  const d=getData();const rt=d.settings.restTime||60;
+  const d=getData();
   const e=EXMAP[exId];
-  const label = (e && i<e.sets) ? `${e.name} — Série ${i+1}` : 'Próximo exercício';
+  const rt=(e&&e.rest!=null)?e.rest:(d.settings.restTime||60);
+  const n=e?setsFor(e):0;
+  // Biset/triset: depois do A vai direto pro B; depois do último, volta pro A na próxima série.
+  const blk=e?PLAN[e.day].blocks.find(b=>b.ex.some(x=>x.id===exId)):null;
+  const isGroup=blk&&blk.label.startsWith('🔗')&&blk.ex.length>1;
+  const pos=isGroup?blk.ex.findIndex(x=>x.id===exId):-1;
+  if(rt===0){
+    const nx=isGroup&&pos<blk.ex.length-1?blk.ex[pos+1]:null;
+    toast(nx?`➡️ Direto para: ${nx.name} (série ${i})`:'➡️ Próximo!');
+    if(nx){const el=document.getElementById('ex_'+nx.id); if(el&&!el.classList.contains('open'))el.classList.add('open');}
+    return;
+  }
+  const label = isGroup ? (i<n ? `🔗 Volta para ${blk.ex[0].name} — Série ${i+1}` : 'Próximo bloco')
+                        : ((e && i<n) ? `${e.name} — Série ${i+1}` : 'Próximo exercício');
   state.rest={endAt:Date.now()+rt*1000, total:rt, label};
   try{localStorage.setItem(REST_KEY,JSON.stringify(state.rest));}catch(_){}
   document.getElementById('restNx').textContent=label;
@@ -859,9 +978,10 @@ function renderHist(){
   if(!done.length){el.innerHTML='<div class="empty">Nenhum treino finalizado ainda</div>';return;}
   el.innerHTML=done.map(s=>{
     const P=PLAN[s.workoutId];let series=0,ton=0;
+    const tName=s.date<LEGACY_DAYS.before?LEGACY_DAYS.names[s.workoutId]:P.name;
     Object.values(s.seriesLog).forEach(sets=>Object.values(sets).forEach(x=>{if(x.done){series++;if(x.kg&&x.reps)ton+=parseFloat(x.kg)*parseInt(x.reps);}}));
-    return `<div class="hist"><div class="tag" style="background:var(--${P.color})">${dayName(s.workoutId).replace('Dia ','D')}</div>
-      <div class="info"><div class="t">${P.name}</div><div class="d">${s.date.split('-').reverse().join('/')} · ${s.weekKey} · ${series} séries · ${(ton/1000).toFixed(1)}t</div></div></div>`;
+    return `<div class="hist"><div class="tag" style="background:var(--${P.color})">${dayName(s.workoutId).split(' ·')[0].replace('Dia ','D')}</div>
+      <div class="info"><div class="t">${tName}</div><div class="d">${s.date.split('-').reverse().join('/')} · ${s.weekKey} · ${series} séries · ${(ton/1000).toFixed(1)}t</div></div></div>`;
   }).join('');
 }
 
