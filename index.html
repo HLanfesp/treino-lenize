@@ -301,7 +301,7 @@ const PAST_DELOADS = [['2026-09-21','2026-09-27'],['2026-10-26','2026-11-01']];
 const START_KG = {
   hip1:125, rt:36, bulgg:16, sumo1:16, coice1:18.75, abdcabo:5, flex1:37.5, abd1:92.5, infra1:10,
   pux:30, puxf:35, remc:27.5, pull:20, face2:15, rdir:18, rinc:7, crinv:4, rmart:10,
-  smith:22.5, passada:8, hip3:20, sumo2:32, aflat:6, ext:60, abd3:90, adu:100, pant2:5, infra3:10,
+  smith:22.5, agh:18, passada:8, hip3:20, sumo2:32, ext:60, abd3:90, adu:100, pant2:5, infra3:10,
   mil:20, arn:10, elevlat:8, crinv2:4, elevp:4, latpol:2.5, face1:28.75, tcorda:28.75, tover:15,
   remb:20, serr:12, pullh:10, supm:10, supinc:12, cruzh:6, rscott:15, rconc:6, puxu:15, rcabo:5, circ5:12,
   hip2:90, sumo3:30, desh2:14, elevlat2:7, coice2:16.25, abdcabo2:5, face3:30, latpol2:2.5
@@ -367,15 +367,15 @@ const PLAN = {
       ex('smith','Agachamento no Smith','Smith','Quadríceps',5,'8–10','Pés levemente à frente · ⏸️ Rest-pause na última (S2–S3)',120),
     ]},
     { label:'⬇️ Piso inferior · Halteres', ex:[
+      ex('agh','Agachamento livre com halter (goblet)','Halter','Quadríceps',4,'10–12','Halter junto ao peito · desça fundo',90),
       ex('passada','Passada andando','Halteres','Quadríceps',4,'12 passos','Cada perna · carga = cada halter',90),
       ex('hip3','Elevação pélvica com halter (costas no banco)','Halter','Glúteos',4,'12–15','Halter no quadril · segure 2s em cima',75),
     ]},
     { label:'⬇️ Piso inferior · Internos', ex:[
       ex('sumo2','Agachamento sumô (foco interno)','Halter','Adutores',4,'12','',75),
-      ex('aflat','Afundo lateral com halter','Halter','Adutores',3,'10','Cada lado',60),
     ]},
     { label:'🟢 Térreo · Máquinas (em sequência)', ex:[
-      ex('ext','Cadeira extensora','Máquina','Quadríceps',4,'12–15','🔥 Drop-set na última (S2–S3)',75),
+      ex('ext','Cadeira extensora','Máquina','Quadríceps',5,'12–15','Segure 1s em cima · 🔥 Drop-set na última (S2–S3)',75),
       ex('abd3','Abdutor','Máquina','Glúteos',4,'20','Últimas 5 reps parciais',60),
       ex('adu','Adutor','Máquina','Adutores',3,'15','',60),
       ex('pant2','Panturrilha sentada','Máquina','Panturrilha',3,'15–20','',45),
@@ -467,7 +467,7 @@ function ex(id,name,equip,muscle,sets,reps,notes,rest){return {id,name,equip,mus
 // Metas de séries semanais por músculo (5 dias fixos; o sábado opcional soma por cima). Prioridades ⭐.
 const MUSCLE_TARGET = {
   'Glúteos':{goal:32,prio:true}, 'Costas':{goal:30,prio:true}, 'Ombros':{goal:30,prio:true}, 'Bíceps':{goal:20,prio:true},
-  'Quadríceps':{goal:13}, 'Posterior':{goal:8}, 'Adutores':{goal:10}, 'Peito':{goal:9},
+  'Quadríceps':{goal:18}, 'Posterior':{goal:8}, 'Adutores':{goal:7}, 'Peito':{goal:9},
   'Tríceps':{goal:8}, 'Panturrilha':{goal:3}, 'Core':{goal:18}
 }
 
@@ -476,7 +476,6 @@ const LEGACY_EX = {
   pant1:{name:'Panturrilha em pé',equip:'Máquina',muscle:'Panturrilha',sets:4,reps:'15–20'},
   devpol:{name:'Desenvolvimento na polia',equip:'Cabo',muscle:'Ombros',sets:3,reps:'10–12'},
   elevfr:{name:'Elevação frontal',equip:'Halteres',muscle:'Ombros',sets:4,reps:'12–15'},
-  agh:{name:'Agachamento livre com halter',equip:'Halteres',muscle:'Quadríceps',sets:4,reps:'8–10'},
   bulg:{name:'Agachamento búlgaro',equip:'Halteres',muscle:'Quadríceps',sets:3,reps:'10–12'},
   uni:{name:'Agachamento livre unilateral',equip:'Halteres',muscle:'Quadríceps',sets:3,reps:'10–12'},
   plank3:{name:'Prancha abdominal',equip:'Peso corporal',muscle:'Core',sets:3,reps:'45–60s'},
@@ -652,29 +651,40 @@ function renderCal(){
     if(ds===todayStr())cell.className+=' today';
     if(d.sessions.find(s=>s.date===ds&&s.finished))cell.className+=' done';
     cell.innerHTML=`<span class="n">${day}</span>`;
-    if(wid)cell.onclick=()=>startWorkout(wid);
+    if(wid)cell.onclick=()=>startWorkout(wid,ds);
     el.appendChild(cell);
   }
 }
 
 /* ---------- WORKOUT ---------- */
-function openToday(){
+function openToday(){state.preview=false;
   const wid=SCHEDULE[new Date().getDay()];
   if(!wid){show('Home');toast('Hoje é descanso 🌙 — bom para recuperar!');return;}
   startWorkout(wid);
 }
-function startWorkout(wid){
+function weekOfDate(ds){const w=MONTH.weeks.find(w=>ds>=w.start&&ds<=w.end);return w?w.key:state.week;}
+// ds = dia tocado no calendário. Se não for hoje, abre só para VISUALIZAR (não cria sessão nem grava nada).
+function startWorkout(wid,ds){
   state.workoutId=wid;
   const d=getData();const t=todayStr();
+  if(ds && ds!==t){
+    const past=d.sessions.find(s=>s.workoutId===wid && s.date===ds);
+    state.preview=true;
+    state.session={workoutId:wid,date:ds,weekKey:weekOfDate(ds),seriesLog:past?past.seriesLog:{},startTime:Date.now(),finished:!!(past&&past.finished)};
+    renderWorkout(); show('Workout'); return;
+  }
+  state.preview=false;
   let sess=d.sessions.find(s=>s.workoutId===wid && s.date===t);
   if(!sess){sess={workoutId:wid,date:t,weekKey:state.week,seriesLog:{},startTime:Date.now(),finished:false};d.sessions.push(sess);save(d);}
+  // Sessão aberta numa versão/mês anterior com semana que não existe no mês atual (ex.: 'S5' de outubro) → ajusta.
+  if(!weekObj(sess.weekKey)){sess.weekKey=weekObj(state.week)?state.week:currentWeekKey();save(d);}
   state.session=sess;
   renderWorkout();
   show('Workout');
 }
 function renderWorkout(){
-  const wid=state.workoutId, P=PLAN[wid], w=weekObj(state.session.weekKey);
-  document.getElementById('wDay').textContent=dayName(wid)+' · '+w.rir;
+  const wid=state.workoutId, P=PLAN[wid], w=weekObj(state.session.weekKey)||weekObj(currentWeekKey());
+  document.getElementById('wDay').textContent=(state.preview?'👀 Só visualização · '+state.session.date.split('-').reverse().slice(0,2).join('/')+' · ':'')+dayName(wid)+' · '+w.rir;
   document.getElementById('wTitle').textContent=P.name;
   document.getElementById('wMuscles').textContent=P.muscles;
   document.getElementById('wWeek').textContent=w.label+' · '+w.sub;
@@ -703,12 +713,12 @@ function exCard(e){
     const sugAttr=(kgVal===''&&sug!=null)?`placeholder="${sug}" class="sug"`:`value="${kgVal}"`;
     rows+=`<div class="set-row">
       <span class="set-lbl">S${i}</span>
-      <div class="set-check ${s.done?'on':''}" id="chk_${e.id}_${i}" onclick="toggleSet('${e.id}',${i})">${s.done?'✓':''}</div>
-      <div class="inp"><label>Carga (kg)</label><input type="number" inputmode="decimal" step="0.5" id="kg_${e.id}_${i}" ${sugAttr} onchange="setKg('${e.id}',${i},this.value)"></div>
-      <div class="inp"><label>Reps</label><input type="number" inputmode="numeric" id="rp_${e.id}_${i}" value="${repVal!==''?repVal:''}" placeholder="${midReps(e.reps)}" onchange="setReps('${e.id}',${i},this.value)"></div>
+      <div class="set-check ${s.done?'on':''}" id="chk_${e.id}_${i}" ${state.preview?'':`onclick="toggleSet('${e.id}',${i})"`}>${s.done?'✓':''}</div>
+      <div class="inp"><label>Carga (kg)</label><input type="number" inputmode="decimal" step="0.5" id="kg_${e.id}_${i}" ${sugAttr} ${state.preview?'disabled':''} onchange="setKg('${e.id}',${i},this.value)"></div>
+      <div class="inp"><label>Reps</label><input type="number" inputmode="numeric" id="rp_${e.id}_${i}" ${state.preview?'disabled':''} value="${repVal!==''?repVal:''}" placeholder="${midReps(e.reps)}" onchange="setReps('${e.id}',${i},this.value)"></div>
     </div>`;
   }
-  const manual = weekObj(state.session.weekKey).mode==='manual';
+  const manual = (weekObj(state.session.weekKey)||{}).mode==='manual';
   const sugTxt = sug!=null ? (manual?`<span>✍️ Base do mês · sugerido <b>${sug}kg</b></span>`:`<span>💡 Sugerido: <b>${sug}kg</b></span>`) : (manual?'<span>✍️ Carga manual (base do mês)</span>':'<span>✍️ Sem base ainda</span>');
   wrap.innerHTML=`
     <div class="ex-h" onclick="toggleEx('${e.id}')">
@@ -773,7 +783,7 @@ function updateProg(){
   P.blocks.forEach(b=>b.ex.forEach(e=>{total+=setsFor(e);const l=state.session.seriesLog[e.id]||{};done+=Object.values(l).filter(x=>x.done).length;}));
   document.getElementById('wBar').style.width=(total?done/total*100:0)+'%';
   document.getElementById('wProg').textContent=`${done} / ${total} séries`;
-  document.getElementById('finishBtn').style.display= done>0?'block':'none';
+  document.getElementById('finishBtn').style.display= (done>0&&!state.preview)?'block':'none';
 }
 function finishWorkout(){
   update(d=>{const s=d.sessions.find(x=>x.workoutId===state.workoutId&&x.date===todayStr());s.finished=true;s.endTime=Date.now();});
