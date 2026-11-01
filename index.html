@@ -182,6 +182,7 @@
     <div class="progress" style="margin-top:14px"><i id="wBar"></i></div>
     <div class="sub" id="wProg" style="margin-top:6px">0 / 0 séries</div>
   </div>
+  <button class="btn" id="doTodayBtn" style="margin-top:14px;display:none" onclick="startWorkout(state.workoutId)">▶️ Fazer este treino hoje</button>
   <div id="exList"></div>
   <button class="btn accent" id="finishBtn" style="margin-top:18px;display:none" onclick="finishWorkout()">🏆 Finalizar treino</button>
 </div>
@@ -689,6 +690,8 @@ function renderWorkout(){
   document.getElementById('wMuscles').textContent=P.muscles;
   document.getElementById('wWeek').textContent=w.label+' · '+w.sub;
   document.getElementById('wHero').style.background=`linear-gradient(135deg, var(--${P.color}), var(--primary-dark))`;
+  // Na visualização (dia tocado no calendário), permite trocar: fazer este treino hoje.
+  document.getElementById('doTodayBtn').style.display=state.preview?'block':'none';
   const list=document.getElementById('exList');list.innerHTML='';
   P.blocks.forEach(b=>{
     const lab=document.createElement('div');lab.className='blocklabel';lab.textContent=b.label;list.appendChild(lab);
