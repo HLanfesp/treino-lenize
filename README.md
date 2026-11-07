@@ -3,8 +3,8 @@
 App de treino de musculação da Lenize — mesmo padrão do seu app de agosto (vanilla JS, `localStorage`, sem dependências), com melhorias.
 
 ## O que tem
-- **5 dias + sábado opcional** (Glúteos & Posterior · Costas & Bíceps A · Quadríceps & Glúteos B · Ombros & Tríceps · Costas B/Bíceps B/Peito · Sáb opcional: Glúteos & Ombros Pump). Domingo = descanso.
-- **Organizado por andar da SmartFit 305N** e com **bisets só onde rendem mais** (polia + polia, costas + peito, core). O timer tem descanso próprio por exercício e no biset avisa "direto para o B".
+- **5 dias + sábado opcional, ~1h de musculação** (Glúteos & Posterior · Costas & Bíceps · Quadríceps & Glúteos B · Ombros & Tríceps · Peito & Costas B · Sáb opcional: Glúteos, Ombros & Bíceps) + cardio depois. Domingo = descanso.
+- **Organizado por andar da SmartFit 305N**, no máximo 4 séries, **bisets do mesmo músculo** (halteres no mesmo lugar ou mesma polia) e um músculo de cada vez. O timer tem descanso próprio por exercício e no biset avisa "direto para o B".
 - **Periodização mensal:** Novembro (4 semanas): S1 adaptação (manual) → S2 volume +2,5% → S3 choque +5% → S4 deload (−20% carga, −40% séries automático).
 - **Sugestão automática de carga** arredondada para pesos que existem (halter 1/2 kg, barra e máquina 2,5, polia 1,25) + "📒 Última vez" em cada exercício (dupla progressão).
 - **Registro série a série** (carga + reps), barra de progresso e timer de descanso.
@@ -36,4 +36,4 @@ Edite no `index.html`:
 O histórico registrado (`localStorage`) **não é tocado** por essas edições.
 
 ---
-*Plano completo em `Plano_Treino_Lenize.md`. v3 · Novembro 2026.*
+*Plano completo em `Plano_Treino_Lenize.md`. v4 · Novembro 2026.*
